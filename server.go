@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"net"
 	"sync"
 )
@@ -33,7 +34,8 @@ func (s *Server) Handler(conn net.Conn) {
 	s.mutex.Lock()
 	s.OnlineMap[user.Username] = user
 	s.mutex.Unlock()
-	s.BroadCast(user)
+	s.BroadCast(user, "已上线")
+	go s.UserMessage(conn, user)
 	select {}
 }
 
@@ -57,9 +59,9 @@ func (s *Server) Start() {
 	}
 }
 
-// 广播用户上线消息
-func (s *Server) BroadCast(user *User) {
-	Message := "[" + user.Username + "]" + user.Useraddr + ": 已上线"
+// 广播消息
+func (s *Server) BroadCast(user *User, msg string) {
+	Message := "[" + user.Username + "]" + user.Useraddr + ":" + msg + "\n"
 	s.ServerChannel <- Message
 }
 
@@ -72,5 +74,21 @@ func (s *Server) ListenGoroutine() {
 			user.UserChannel <- msg
 		}
 		s.mutex.Unlock()
+	}
+}
+func (s *Server) UserMessage(conn net.Conn, user *User) {
+	buf := make([]byte, 4096)
+	for {
+		n, err := conn.Read(buf)
+		if n == 0 {
+			s.BroadCast(user, "已下线")
+			return
+		}
+		if err != nil && err != io.EOF {
+			fmt.Println("read error:", err)
+			return
+		}
+		msg := string(buf[:n-1])
+		s.BroadCast(user, msg)
 	}
 }
