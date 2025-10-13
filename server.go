@@ -58,9 +58,14 @@ func (s *Server) Start() {
 	//socket(listening)
 	listener, eil := net.Listen("tcp", fmt.Sprintf("%s:%s", s.IP, s.Port))
 	if eil != nil {
-		fmt.Println("listrn error:", eil)
+		fmt.Println("listen error:", eil)
 	}
-	defer listener.Close()
+	//关闭连接
+	defer func() {
+		if err := listener.Close(); err != nil {
+			fmt.Println("listener close error:", err)
+		}
+	}()
 	go s.ListenGoroutine()
 	//accept
 	for {
