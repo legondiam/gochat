@@ -30,12 +30,26 @@ func NewServer(ip string, port string) *Server {
 // 连接处理
 func (s *Server) Handler(conn net.Conn) {
 	fmt.Println("连接成功")
-	user := NewUser(conn) //创建用户
-	s.mutex.Lock()
-	s.OnlineMap[user.Username] = user
-	s.mutex.Unlock()
-	s.BroadCast(user, "已上线")
-	go s.UserMessage(conn, user)
+	user := NewUser(conn, s) //创建用户
+	user.Online()            //用户上线
+	//消息处理线程
+	go func() {
+		buf := make([]byte, 4096)
+		for {
+			n, err := conn.Read(buf) //读取用户消息
+			if n == 0 {
+				user.Offline() //n=0时用户下线
+				return
+			}
+			if err != nil && err != io.EOF {
+				fmt.Println("read error:", err)
+				return
+			}
+			msg := string(buf[:n-1]) //转String并去除换行符
+			user.DoMessage(msg)      //处理用户消息
+		}
+	}()
+	//阻塞
 	select {}
 }
 
@@ -59,13 +73,13 @@ func (s *Server) Start() {
 	}
 }
 
-// 广播消息
+// 广播消息（写入ServerChannel）
 func (s *Server) BroadCast(user *User, msg string) {
 	Message := "[" + user.Username + "]" + user.Useraddr + ":" + msg + "\n"
 	s.ServerChannel <- Message
 }
 
-// 监听ServerChannel并发送广播给user
+// 监听ServerChannel并发送user
 func (s *Server) ListenGoroutine() {
 	for {
 		msg := <-s.ServerChannel
@@ -74,21 +88,5 @@ func (s *Server) ListenGoroutine() {
 			user.UserChannel <- msg
 		}
 		s.mutex.Unlock()
-	}
-}
-func (s *Server) UserMessage(conn net.Conn, user *User) {
-	buf := make([]byte, 4096)
-	for {
-		n, err := conn.Read(buf)
-		if n == 0 {
-			s.BroadCast(user, "已下线")
-			return
-		}
-		if err != nil && err != io.EOF {
-			fmt.Println("read error:", err)
-			return
-		}
-		msg := string(buf[:n-1])
-		s.BroadCast(user, msg)
 	}
 }
