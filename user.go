@@ -47,7 +47,22 @@ func (user *User) Offline() {
 	user.s.BroadCast(user, "已下线")
 }
 
+// 发送在线列表
+func (user *User) SendOnlineUsers(usermsg string) {
+	user.conn.Write([]byte(usermsg))
+}
+
 // 用户消息处理
 func (user *User) DoMessage(msg string) {
-	user.s.BroadCast(user, msg)
+	//在线用户查询
+	if msg == "who" {
+		user.s.mutex.Lock()
+		for _, OnlineUser := range user.s.OnlineMap {
+			usermsg := "[" + OnlineUser.Username + "]" + OnlineUser.Useraddr + ":在线\n"
+			user.SendOnlineUsers(usermsg)
+		}
+		user.s.mutex.Unlock()
+	} else {
+		user.s.BroadCast(user, msg)
+	}
 }

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"strings"
 	"sync"
 )
 
@@ -45,8 +46,8 @@ func (s *Server) Handler(conn net.Conn) {
 				fmt.Println("read error:", err)
 				return
 			}
-			msg := string(buf[:n-1]) //转String并去除换行符
-			user.DoMessage(msg)      //处理用户消息
+			msg := strings.TrimSpace(string(buf[:n])) //转String并去除换行符
+			user.DoMessage(msg)                       //处理用户消息
 		}
 	}()
 	//阻塞
