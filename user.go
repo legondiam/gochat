@@ -47,8 +47,8 @@ func (user *User) Offline() {
 	user.s.BroadCast(user, "已下线")
 }
 
-// 发送在线列表
-func (user *User) SendOnlineUsers(usermsg string) {
+// 单独用户发送消息
+func (user *User) SendMessage(usermsg string) {
 	user.conn.Write([]byte(usermsg))
 }
 
@@ -58,10 +58,23 @@ func (user *User) DoMessage(msg string) {
 	if msg == "who" {
 		user.s.mutex.Lock()
 		for _, OnlineUser := range user.s.OnlineMap {
-			usermsg := "[" + OnlineUser.Username + "]" + OnlineUser.Useraddr + ":在线\n"
-			user.SendOnlineUsers(usermsg)
+			usermsg := "[" + OnlineUser.Useraddr + "]" + OnlineUser.Username + ":在线\n"
+			user.SendMessage(usermsg)
 		}
 		user.s.mutex.Unlock()
+	} else if len(msg) > 7 && msg[:7] == "rename|" {
+		newname := msg[7:]
+		_, ok := user.s.OnlineMap[newname]
+		if ok {
+			user.SendMessage("该用户名已被占用\n")
+		} else {
+			user.s.mutex.Lock()
+			delete(user.s.OnlineMap, user.Username)
+			user.s.OnlineMap[newname] = user
+			user.s.mutex.Unlock()
+			user.Username = newname
+			user.SendMessage("用户名已更改为" + user.Username + "\n")
+		}
 	} else {
 		user.s.BroadCast(user, msg)
 	}

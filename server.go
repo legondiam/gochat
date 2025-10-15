@@ -81,7 +81,7 @@ func (s *Server) Start() {
 
 // 广播消息（写入ServerChannel）
 func (s *Server) BroadCast(user *User, msg string) {
-	Message := "[" + user.Username + "]" + user.Useraddr + ":" + msg + "\n"
+	Message := "[" + user.Useraddr + "]" + user.Username + ":" + msg + "\n"
 	s.ServerChannel <- Message
 }
 
