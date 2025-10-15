@@ -6,6 +6,7 @@ import (
 	"net"
 	"strings"
 	"sync"
+	"time"
 )
 
 type Server struct {
@@ -31,8 +32,9 @@ func NewServer(ip string, port string) *Server {
 // 连接处理
 func (s *Server) Handler(conn net.Conn) {
 	fmt.Println("连接成功")
-	user := NewUser(conn, s) //创建用户
-	user.Online()            //用户上线
+	user := NewUser(conn, s)  //创建用户
+	user.Online()             //用户上线
+	islive := make(chan bool) //用户活跃标志
 	//消息处理线程
 	go func() {
 		buf := make([]byte, 4096)
@@ -48,10 +50,21 @@ func (s *Server) Handler(conn net.Conn) {
 			}
 			msg := strings.TrimSpace(string(buf[:n])) //转String并去除换行符
 			user.DoMessage(msg)                       //处理用户消息
+			islive <- true                            //用户活跃中
 		}
 	}()
 	//阻塞
-	select {}
+	for {
+		select {
+		case <-islive: //用户活跃，重置定时器
+
+		case <-time.After(time.Second * 8): //用户10秒无消息则踢出
+			user.SendMessage("你已被踢出服务器")
+			close(user.UserChannel) //关闭用户消息通道
+			conn.Close()            //关闭连接
+			return
+		}
+	}
 }
 
 // 启动服务器

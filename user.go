@@ -26,7 +26,10 @@ func NewUser(conn net.Conn, server *Server) *User {
 // 监听用户方法
 func (user *User) ListenUser() {
 	for {
-		message := <-user.UserChannel
+		message, ok := <-user.UserChannel
+		if !ok {
+			return
+		}
 		user.conn.Write([]byte(message))
 	}
 }
