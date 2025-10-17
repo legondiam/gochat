@@ -53,12 +53,12 @@ func (s *Server) Handler(conn net.Conn) {
 			islive <- true                            //用户活跃中
 		}
 	}()
-	//阻塞
+	//超时处理
 	for {
 		select {
 		case <-islive: //用户活跃，重置定时器
 
-		case <-time.After(time.Second * 8): //用户10秒无消息则踢出
+		case <-time.After(time.Second * 60): //用户60秒无消息则踢出
 			user.SendMessage("你已被踢出服务器")
 			close(user.UserChannel) //关闭用户消息通道
 			conn.Close()            //关闭连接

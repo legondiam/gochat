@@ -1,6 +1,9 @@
 package main
 
-import "net"
+import (
+	"net"
+	"strings"
+)
 
 type User struct {
 	Username    string
@@ -65,7 +68,7 @@ func (user *User) DoMessage(msg string) {
 			user.SendMessage(usermsg)
 		}
 		user.s.mutex.Unlock()
-	} else if len(msg) > 7 && msg[:7] == "rename|" {
+	} else if len(msg) > 7 && msg[:7] == "rename|" { //用户名更改
 		newname := msg[7:]
 		_, ok := user.s.OnlineMap[newname]
 		if ok {
@@ -77,6 +80,28 @@ func (user *User) DoMessage(msg string) {
 			user.s.mutex.Unlock()
 			user.Username = newname
 			user.SendMessage("用户名已更改为" + user.Username + "\n")
+		}
+	} else if len(msg) > 3 && msg[:3] == "to|" { //私聊
+		toUser := strings.Split(msg, "|")[1]
+		if toUser == "" {
+			user.SendMessage("请正确输入用户名，格式为to|用户名|消息内容\n")
+			return
+		} else if toUser == user.Username {
+			user.SendMessage("不能私聊自己\n")
+			return
+		}
+
+		_, ok := user.s.OnlineMap[toUser]
+		if !ok {
+			user.SendMessage("该用户不在线")
+			return
+		} else {
+			usermsg := strings.Split(msg, "|")[2]
+			if usermsg == "" {
+				user.SendMessage("请正确输入消息内容，格式为to|用户名|消息内容\n")
+			} else {
+				user.s.OnlineMap[toUser].SendMessage(user.Username + "私聊你：" + usermsg)
+			}
 		}
 	} else {
 		user.s.BroadCast(user, msg)
