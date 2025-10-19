@@ -84,6 +84,24 @@ func (client *Client) UpdateName() bool {
 	return true
 }
 
+// 公聊模式
+func (client *Client) PublicChat() {
+	var chatMsg string
+	for chatMsg != "exit" {
+		if len(chatMsg) != 0 {
+			sendmsg := chatMsg
+			_, err := client.Conn.Write([]byte(sendmsg))
+			if err != nil {
+				fmt.Println("conn.Write err:", err)
+				break
+			}
+		}
+		fmt.Println("请输入聊天内容（exit退出）")
+		chatMsg = ""
+		fmt.Scanln(&chatMsg)
+	}
+}
+
 // 监听消息
 func (client *Client) DealResponse() {
 	io.Copy(os.Stdout, client.Conn)
@@ -94,13 +112,14 @@ func (client *Client) Run() {
 		}
 		switch client.flag {
 		case 1:
-			fmt.Println("公聊模式")
+			//公聊模式
+			client.PublicChat()
 			break
 		case 2:
 			fmt.Println("私聊模式")
 			break
 		case 3:
-			fmt.Println("更新用户名")
+			//更新用户名
 			client.UpdateName()
 			break
 		}
