@@ -74,7 +74,7 @@ func (client *Client) Menu() bool {
 // 修改用户名
 func (client *Client) UpdateName() bool {
 	fmt.Println("请输入用户名")
-	fmt.Scan(&client.ClientName)
+	fmt.Scanln(&client.ClientName)
 	newname := "rename|" + client.ClientName
 	_, err := client.Conn.Write([]byte(newname))
 	if err != nil {
@@ -102,6 +102,42 @@ func (client *Client) PublicChat() {
 	}
 }
 
+// 查询用户
+func (client *Client) OnlineUsers() {
+	sendmsg := "who"
+	_, err := client.Conn.Write([]byte(sendmsg))
+	if err != nil {
+		fmt.Println("conn.Write err:", err)
+	}
+}
+
+// 私聊模式
+func (client *Client) PrivateChat() {
+	var chatMsg string
+	client.OnlineUsers()
+	var remoteName string
+	fmt.Println("请输入聊天对象用户名(exit退出)")
+	fmt.Scanln(&remoteName)
+	for remoteName != "exit" {
+		for chatMsg != "exit" {
+			if chatMsg != "" {
+				sendmsg := "to|" + remoteName + "|" + chatMsg //发送消息时 server才知道remotename
+				_, err := client.Conn.Write([]byte(sendmsg))
+				if err != nil {
+					fmt.Println("conn.Write err:", err)
+					break
+				}
+			}
+			fmt.Println("请输入聊天内容(exit退出)")
+			chatMsg = ""
+			fmt.Scanln(&chatMsg)
+		}
+		fmt.Println("请输入聊天对象用户名(exit退出)")
+		remoteName = ""
+		fmt.Scanln(&remoteName)
+	}
+}
+
 // 监听消息
 func (client *Client) DealResponse() {
 	io.Copy(os.Stdout, client.Conn)
@@ -116,7 +152,8 @@ func (client *Client) Run() {
 			client.PublicChat()
 			break
 		case 2:
-			fmt.Println("私聊模式")
+			//私聊模式
+			client.PrivateChat()
 			break
 		case 3:
 			//更新用户名

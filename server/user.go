@@ -93,14 +93,14 @@ func (user *User) DoMessage(msg string) {
 
 		_, ok := user.s.OnlineMap[toUser]
 		if !ok {
-			user.SendMessage("该用户不在线")
+			user.SendMessage("该用户不在线\n")
 			return
 		} else {
 			usermsg := strings.Split(msg, "|")[2]
 			if usermsg == "" {
 				user.SendMessage("请正确输入消息内容，格式为to|用户名|消息内容\n")
 			} else {
-				user.s.OnlineMap[toUser].SendMessage(user.Username + "私聊你：" + usermsg)
+				user.s.OnlineMap[toUser].SendMessage("[" + user.Username + "]" + "私聊你：" + usermsg + "\n")
 			}
 		}
 	} else {
